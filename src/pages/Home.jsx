@@ -17,7 +17,7 @@ const Home = () => {
         {/* Saudação */}
         <header className="flex items-center justify-center gap-3">
           <Photo className={`w-10 h-10 shrink-0`}/>
-          <Saudação username={user.firstName+" "+user.lastName}/>
+          <Saudação username={""+""}/>
         </header>
   
         <div className="rounded-lg overflow-hidden border border-gray-300 bg-gray-100">
