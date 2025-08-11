@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+
 export default function Register() {
   const [username, setUsername] = useState('');
   const [copied, setCopied] = useState(false);
@@ -12,24 +13,15 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const selects = ['Masculino', 'Femenino', 'Generalizado'];
+  const [loading, setLoading] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+
+  const selects = ['Masculino', 'Feminino', 'Generalizado'];
   const schools = [
-    {
-      educationLevel: 'Ensino Primário',
-      schoolClasses: ['1ª Classe', '2ª Classe', '3ª Classe', '4ª Classe', '5ª Classe', '6ª Classe'],
-    },
-    {
-      educationLevel: 'Ensino Secundário - 1º Ciclo',
-      schoolClasses: ['7ª Classe', '8ª Classe', '9ª Classe'],
-    },
-    {
-      educationLevel: 'Ensino Secundário - 2º Ciclo',
-      schoolClasses: ['10ª Classe', '11ª Classe', '12ª Classe', '13ª Classe'],
-    },
-    {
-      educationLevel: 'Ensino Superior',
-      schoolClasses: ['1º Ano Superior', '2º Ano Superior', '3º Ano Superior', '4º Ano Superior'],
-    },
+    { educationLevel: 'Ensino Primário', schoolClasses: ['1ª Classe', '2ª Classe', '3ª Classe', '4ª Classe', '5ª Classe', '6ª Classe'] },
+    { educationLevel: 'Ensino Secundário - 1º Ciclo', schoolClasses: ['7ª Classe', '8ª Classe', '9ª Classe'] },
+    { educationLevel: 'Ensino Secundário - 2º Ciclo', schoolClasses: ['10ª Classe', '11ª Classe', '12ª Classe', '13ª Classe'] },
+    { educationLevel: 'Ensino Superior', schoolClasses: ['1º Ano Superior', '2º Ano Superior', '3º Ano Superior', '4º Ano Superior'] },
   ];
 
   const handleCopy = async () => {
@@ -44,62 +36,70 @@ export default function Register() {
 
   const generateUsername = () => {
     if (!firstName) return alert("Insira o primeiro nome!");
-
     const fn = firstName.trim().toLowerCase();
     const ln = lastName?.trim().toLowerCase() || '';
     const rand = () => Math.floor(Math.random() * 900 + 100);
-
     const options = [
-      `${fn}_${ln}`,
-      `${fn}${ln}`,
-      `${ln}${fn}`,
-      `${fn}_${ln}${rand()}`,
-      `${ln}_${fn}${rand()}`,
-      `${fn}${ln}${rand()}`,
-      `${fn.charAt(0)}${ln.charAt(0)}`,
-      `${fn.charAt(0)}${ln}`,
-      `${ln.charAt(0)}${fn}`,
-      `${fn}_${ln.charAt(0)}`,
-      `${ln}_${fn.charAt(0)}`,
+      `${fn}_${ln}`, `${fn}${ln}`, `${ln}${fn}`,
+      `${fn}_${ln}${rand()}`, `${ln}_${fn}${rand()}`,
+      `${fn}${ln}${rand()}`, `${fn.charAt(0)}${ln.charAt(0)}`,
+      `${fn.charAt(0)}${ln}`, `${ln.charAt(0)}${fn}`,
+      `${fn}_${ln.charAt(0)}`, `${ln}_${fn.charAt(0)}`,
       `${fn.charAt(0)}${ln.charAt(0)}_${rand()}`,
-      `${fn.slice(0, 3)}${ln.slice(0, 3)}`,
-      `${fn}_${rand()}`,
-      `${ln}_${rand()}`,
-      `${ln.slice(0, 4)}${rand()}`
+      `${fn.slice(0, 3)}${ln.slice(0, 3)}`, `${fn}_${rand()}`,
+      `${ln}_${rand()}`, `${ln.slice(0, 4)}${rand()}`
     ].filter(Boolean);
-
-    // Garante que não repita o mesmo que está atualmente
     const filtered = options.filter(option => option !== username);
     const nextUsername = filtered[Math.floor(Math.random() * filtered.length)];
-
     setUsername(nextUsername);
     setKeep(true);
   };
 
-
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setMensagem('');
 
     if (!username || !gender || !classLevel || !password || password !== confirmPassword) {
-      alert("Preencha todos os campos corretamente!");
-      return;
+      return setMensagem("Preencha todos os campos corretamente e confirme a senha.");
     }
 
-    const newUser = {
-      username,
-      firstName,
-      lastName,
-      gender,
-      classLevel,
-      password,
-    };
+    setLoading(true);
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
+    try {
+      const response = await fetch("https://estudamaisapi.onrender.com/auth/register", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          username,
+          password,
+          gender,
+          grade: classLevel
+        })
+      });
 
-    alert("Usuário criado com sucesso!");
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || "Erro ao registrar");
+
+      setMensagem(data.message); // "Usuário cadastrado com sucesso"
+      setFirstName('');
+      setLastName('');
+      setUsername('');
+      setGender('');
+      setClassLevel('');
+      setPassword('');
+      setConfirmPassword('');
+      setKeep(false);
+    } catch (error) {
+      setMensagem(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -206,11 +206,16 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Botão */}
-        <div className="text-center">
-          <button type="submit"
+        {mensagem && (
+          <p className={`mt-4 text-center font-semibold ${mensagem.includes("sucesso") ? "text-green-600" : "text-red-600"}`}>
+            {mensagem}
+          </p>
+        )}
+
+        <div className="text-center mt-6">
+          <button type="submit" disabled={loading}
             className="w-full max-w-xs bg-[#2F4858] text-white p-4 rounded-md hover:bg-[#33658A] transition-colors font-semibold">
-            Criar Perfil
+            {loading ? "Criando..." : "Criar Perfil"}
           </button>
         </div>
       </form>
