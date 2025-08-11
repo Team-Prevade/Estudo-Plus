@@ -6,25 +6,44 @@ export default function Login() {
   const [inputName, setInputName] = useState("");
   const [inputPassword, setInputPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    try {
+      const response = await fetch("https://estudamaisapi.onrender.com/auth/login", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: inputName,
+          password: inputPassword
+        })
+      });
 
-    const foundUser = users.find(
-      (user) =>
-        (user.username === inputName || user.email === inputName) &&
-        user.password === inputPassword
-    );
+      const data = await response.json();
 
-    if (foundUser) {
-      window.location.href = "/home"; //para atulizar já a pagina
-      localStorage.setItem("loggedUser", JSON.stringify(foundUser));
-      navigate("/home"); 
-      
-    } else {
-      setError("Nome de utilizador ou senha incorretos.");
+      if (!response.ok) {
+        throw new Error(data.message || "Falha no login");
+      }
+
+      // Salva o token no localStorage
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // Redireciona para a página inicial
+      navigate("/home");
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,7 +54,7 @@ export default function Login() {
       <form onSubmit={handleLogin}>
         <div className="mb-6">
           <label htmlFor="iname" className="block mb-2 font-medium">
-            Email ou nome de utilizador
+            Nome de utilizador
           </label>
           <input
             id="iname"
@@ -67,9 +86,10 @@ export default function Login() {
 
         <button
           type="submit"
+          disabled={loading}
           className="cursor-pointer w-full h-12 bg-[#2F4858] text-white rounded-md hover:bg-[#33658A] transition-colors duration-300 font-semibold"
         >
-          Entrar
+          {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
 

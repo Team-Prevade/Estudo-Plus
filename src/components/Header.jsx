@@ -3,31 +3,24 @@ import { useRef, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getPageTitle} from "../utils/PageTitles";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from "../hooks/useAuth";
 
-const user = JSON.parse(localStorage.getItem("loggedUser"));
+
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation()
   const menuRef = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth(false);
+  if (!user) {
+    return null; 
+  }
 
 // Função para alternar o menu
     const toggleMenu = () => {
         setMenuOpen((prev) => !prev);
     };
-// Fechar o menu ao clicar fora
-    useEffect(() => {
-        const ClicouFora = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", ClicouFora);
-        return () => {
-            document.removeEventListener("mousedown", ClicouFora);
-        };
-    }, []);
-    
+
   return (
     <header className="bg-white shadow px-6 py-3 flex items-center justify-between border-b">
       {/* Logo e Título */}
@@ -51,7 +44,7 @@ const Header = () => {
             <div className="p-4 border-b">
               <p className="font-semibold text-gray-800">{user.firstName+" "+user.lastName}</p>
               <p className="text-sm text-gray-500">{user.username}</p>
-              <p className="text-sm text-gray-500 mt-1">{user.classLevel} - Curso: {""+user.curse}</p>
+              <p className="text-sm text-gray-500 mt-1">{user.grade} - Curso: {""+user.curse}</p>
             </div>
             <ul className="divide-y text-sm">
               <li>
@@ -60,7 +53,7 @@ const Header = () => {
                 </button>
               </li>
               <li>
-                <button  onClick={() => { localStorage.removeItem('loggedUser'); navigate('/')}} 
+                <button  onClick={() => { localStorage.removeItem('token'); navigate('/')}} 
                 className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">
                   Sair
                 </button>
